@@ -4,12 +4,15 @@ FROM php:7.2-cli
 # @see https://secure.phabricator.com/book/phabricator/article/installation_guide/#installing-required-comp
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
+    sudo \
     git \
     mercurial \
     subversion \
     ca-certificates \
     python-pygments \
     imagemagick \
+    openssh-server \
+    openssh-client \
   && rm -rf /var/lib/apt/lists/*
 
 # install the PHP extensions we need
@@ -86,6 +89,17 @@ RUN mkdir /var/repo
 
 RUN mkdir -p /var/tmp/phd/log/ \
   && touch /var/tmp/phd/log/daemons.log
+
+RUN mkdir -p /var/run/sshd
+RUN chown -R www-data:www-data /var/tmp/phd
+
+RUN ln -s /usr/local/bin/php /usr/bin/php
+
+RUN groupadd phabricator && useradd -p '*' -m -g phabricator phabricator
+
+RUN { \
+        echo 'phabricator ALL=(www-data) SETENV: NOPASSWD: /usr/bin/git, /usr/bin/git-upload-pack, /usr/bin/git-receive-pack, /usr/bin/ssh'; \
+    } >> /etc/sudoers
 
 COPY ./ /var/www
 
